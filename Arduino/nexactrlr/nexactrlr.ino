@@ -37,6 +37,12 @@ void initNexa() {
   nexaCtrlr.add(32211232, 1, 1, 14, 0);
   nexaCtrlr.add(32211232, 1, 0, 22, 0);
   
+  // Kjøkken ovn 32211244.0
+  nexaCtrlr.add(32211244, 0, 1, 6, 0);
+  nexaCtrlr.add(32211244, 0, 0, 8, 0);
+  nexaCtrlr.add(32211244, 0, 1, 14, 0);
+  nexaCtrlr.add(32211244, 0, 0, 22, 0);
+  
   // Loftstua: 32211240.0
   nexaCtrlr.add(32211240, 0, 1, 6, 0);
   nexaCtrlr.add(32211240, 0, 0, 8, 0);
