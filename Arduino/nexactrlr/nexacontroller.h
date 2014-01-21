@@ -33,7 +33,7 @@ public:
   };
 
 private:
-  static const uint8_t MAX_DEVICES = 16;
+  static const uint8_t MAX_DEVICES = 20;
   RtcClock* _rtcClock;
   uint8_t numDevices;
   nexadevice_t nexaDevices[MAX_DEVICES];

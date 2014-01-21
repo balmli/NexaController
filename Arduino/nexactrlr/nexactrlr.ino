@@ -1,16 +1,19 @@
 #include "rtcclock.h"
 #include "clockint.h"
 #include "nexacontroller.h"
+#include "nexareceiver.h"
 
 #include <Cosa/RTC.hh>
 #include <Cosa/Watchdog.hh>
 #include <Cosa/Trace.hh>
 #include <Cosa/IOBuffer.hh>
 #include <Cosa/IOStream/Driver/UART.hh>
+#include <Cosa/Driver/NEXA.hh>
 
 RtcClock ds3231;
 ClockInterrupt clockInt(Board::EXT1);
 NexaController nexaCtrlr(Board::D12, &ds3231);
+NexaReceiver receiver(Board::EXT0);
 
 void setup() {
   uart.begin(9600);
@@ -26,6 +29,8 @@ void setup() {
   clockInt.attach(&ds3231);
   clockInt.attach(&nexaCtrlr);
   clockInt.enable();
+  
+  receiver.enable();
 }
 
 void initNexa() {
@@ -54,4 +59,8 @@ void initNexa() {
   nexaCtrlr.add(32211236, 0, 0, 7, 0);
   nexaCtrlr.add(32211236, 0, 1, 15, 0);
   nexaCtrlr.add(32211236, 0, 0, 22, 0);
+  
+  // Kontor: 32211234.0
+  nexaCtrlr.add(32211234, 0, 1, 15, 0);
+  nexaCtrlr.add(32211234, 0, 0, 22, 0);  
 }
