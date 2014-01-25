@@ -65,7 +65,9 @@ void NexaController::on_event(uint8_t type, uint16_t value) {
         }
         if (now.hours == nd.hour && now.minutes == nd.minute) {
             set_house(nd.house);
+            _nexaReceiver->disable();
             send(nd.device, nd.onoff);
+            _nexaReceiver->enable();
             if (IS_LOG_PRIO(LOG_INFO)) {
                 trace << PSTR("Nexa sent: ") << nd << endl;
             }
@@ -81,9 +83,11 @@ void NexaController::sendRc(uint32_t houseRc, uint8_t deviceRc, uint8_t onoff) {
         }
         if (nr.houseRc == houseRc && nr.deviceRc == deviceRc) {
             set_house(nr.house);
+            _nexaReceiver->disable();
             send(nr.device, onoff);
+            _nexaReceiver->enable();
             if (IS_LOG_PRIO(LOG_INFO)) {
-                trace << PSTR("Nexa sent: ") << nr << endl;
+                trace << PSTR("Nexa sent: ") << nr << PSTR(": on/off: ") << onoff << endl;
             }
         }
     }

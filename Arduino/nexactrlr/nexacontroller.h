@@ -2,6 +2,8 @@
 #define __NEXA_CONTROLLER_H__
 
 #include "rtcclock.h"
+#include "nexareceiver.h"
+
 #include <Cosa/Linkage.hh>
 #include <Cosa/Driver/NEXA.hh>
 
@@ -59,6 +61,7 @@ private:
     static const uint8_t MAX_DEVICES = 20;
     static const uint8_t MAX_REMOTES = 20;
     RtcClock* _rtcClock;
+    NexaReceiver* _nexaReceiver;
     uint8_t numDevices;
     uint8_t numRemotes;
     nexadevice_t nexaDevices[MAX_DEVICES];
@@ -69,11 +72,12 @@ protected:
 
 public:
 
-    NexaController(Board::DigitalPin nexaTransmitterPin, RtcClock* rtc) :
+    NexaController(Board::DigitalPin nexaTransmitterPin, RtcClock* rtc, NexaReceiver* nr) :
     Link(),
     NEXA::Transmitter(nexaTransmitterPin),
     numDevices(0) {
         _rtcClock = rtc;
+        _nexaReceiver = nr;
     }
 
     void add(nexadevice_t* nd);

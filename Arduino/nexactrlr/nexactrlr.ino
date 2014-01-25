@@ -12,8 +12,8 @@
 
 RtcClock ds3231;
 ClockInterrupt clockInt(Board::EXT1);
-NexaController nexaCtrlr(Board::D12, &ds3231);
 NexaReceiver receiver(Board::EXT0);
+NexaController nexaCtrlr(Board::D12, &ds3231, &receiver);
 
 void setup() {
     uart.begin(9600);
@@ -43,9 +43,7 @@ void loop() {
         NEXA::code_t cmd(0);
         NexaReceiver::queue.dequeue(&cmd);
         trace << PSTR("cmd: ") << cmd << endl;
-        receiver.disable();
         nexaCtrlr.sendRc(cmd.house, cmd.device, cmd.onoff);
-        receiver.enable();
     }
 }
 
