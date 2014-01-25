@@ -33,11 +33,36 @@ public:
         friend IOStream& operator<<(IOStream& outs, nexadevice_t code);
     };
 
+    union nexaremote_t {
+
+        struct {
+            uint32_t houseRc;
+            uint8_t deviceRc;
+            uint32_t house;
+            uint8_t device;
+        };
+
+        nexaremote_t() {
+        };
+
+        nexaremote_t(int32_t hRc, uint8_t dRc, int32_t h, uint8_t d) {
+            houseRc = hRc;
+            deviceRc = dRc;
+            house = h;
+            device = d;
+        }
+
+        friend IOStream& operator<<(IOStream& outs, nexaremote_t code);
+    };
+
 private:
     static const uint8_t MAX_DEVICES = 20;
+    static const uint8_t MAX_REMOTES = 20;
     RtcClock* _rtcClock;
     uint8_t numDevices;
+    uint8_t numRemotes;
     nexadevice_t nexaDevices[MAX_DEVICES];
+    nexaremote_t nexaRemotes[MAX_REMOTES];
 
 protected:
     virtual void on_event(uint8_t type, uint16_t value);
@@ -53,6 +78,8 @@ public:
 
     void add(nexadevice_t* nd);
     void add(int32_t house, uint8_t device, uint8_t onoff, uint8_t hour, uint8_t minute);
+    void addRc(int32_t houseRc, uint8_t deviceRc, int32_t house, uint8_t device);
+    void sendRc(uint32_t houseRc, uint8_t deviceRc, uint8_t onoff);
 };
 
 #endif

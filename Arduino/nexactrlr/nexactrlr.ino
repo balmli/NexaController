@@ -30,6 +30,7 @@ void setup() {
     clockInt.attach(&nexaCtrlr);
     clockInt.enable();
 
+    //receiver.attach(&nexaCtrlr);
     receiver.enable();
 }
 
@@ -38,7 +39,14 @@ void loop() {
     Event::queue.await(&event);
     event.dispatch();
 
-    trace << PSTR("event: ") << event.get_type() << PSTR(" - ") << event.get_value() << endl;
+    if (event.get_type() == NexaReceiver::REMOTE_CONTROL && NexaReceiver::queue.available() > 0) {
+        NEXA::code_t cmd(0);
+        NexaReceiver::queue.dequeue(&cmd);
+        trace << PSTR("cmd: ") << cmd << endl;
+        receiver.disable();
+        nexaCtrlr.sendRc(cmd.house, cmd.device, cmd.onoff);
+        receiver.enable();
+    }
 }
 
 void initNexa() {
@@ -71,4 +79,17 @@ void initNexa() {
     // Kontor: 32211234.0
     nexaCtrlr.add(32211234, 0, 1, 15, 0);
     nexaCtrlr.add(32211234, 0, 0, 22, 0);
+
+    // Remote for stua, kjøkken, loftstue
+    nexaCtrlr.addRc(12134882, 0, 32211232, 0);
+    nexaCtrlr.addRc(12134882, 0, 32211232, 1);
+    nexaCtrlr.addRc(12134882, 0, 32211244, 0);
+    nexaCtrlr.addRc(12134882, 0, 32211240, 0);
+
+    // Remote for soverom
+    nexaCtrlr.addRc(12134882, 1, 32211236, 0);
+
+    // Remote for kontoret
+    nexaCtrlr.addRc(12134882, 2, 32211234, 0);
+
 }

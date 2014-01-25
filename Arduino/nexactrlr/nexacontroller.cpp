@@ -10,6 +10,14 @@ IOStream& operator<<(IOStream& outs, NexaController::nexadevice_t nd) {
     return (outs);
 }
 
+IOStream& operator<<(IOStream& outs, NexaController::nexaremote_t nd) {
+    outs << PSTR("houseRc = ") << nd.houseRc
+            << PSTR(", deviceRc = ") << nd.deviceRc
+            << PSTR(", house = ") << nd.house
+            << PSTR(", device = ") << nd.device;
+    return (outs);
+}
+
 void NexaController::add(nexadevice_t* nd) {
     add(nd->house, nd->device, nd->onoff, nd->hour, nd->minute);
 }
@@ -30,6 +38,21 @@ void NexaController::add(int32_t house, uint8_t device, uint8_t onoff, uint8_t h
     }
 }
 
+void NexaController::addRc(int32_t houseRc, uint8_t deviceRc, int32_t house, uint8_t device) {
+    if (numRemotes < MAX_REMOTES) {
+        nexaRemotes[numRemotes].houseRc = houseRc;
+        nexaRemotes[numRemotes].deviceRc = deviceRc;
+        nexaRemotes[numRemotes].house = house;
+        nexaRemotes[numRemotes].device = device;
+        if (IS_LOG_PRIO(LOG_DEBUG)) {
+            trace << PSTR("NexaController::addRc: ") << numRemotes << PSTR(": ") << nexaRemotes[numRemotes] << endl;
+        }
+        numRemotes++;
+    } else {
+        TRACE("Max number of Nexa remotes reached");
+    }
+}
+
 void NexaController::on_event(uint8_t type, uint16_t value) {
     time_t now;
     _rtcClock->get_time(now);
@@ -45,6 +68,22 @@ void NexaController::on_event(uint8_t type, uint16_t value) {
             send(nd.device, nd.onoff);
             if (IS_LOG_PRIO(LOG_INFO)) {
                 trace << PSTR("Nexa sent: ") << nd << endl;
+            }
+        }
+    }
+}
+
+void NexaController::sendRc(uint32_t houseRc, uint8_t deviceRc, uint8_t onoff) {
+    for (uint8_t i = 0; i < numRemotes; i++) {
+        nexaremote_t nr = nexaRemotes[i];
+        if (IS_LOG_PRIO(LOG_DEBUG)) {
+            trace << PSTR("nexa remote: ") << i << PSTR(": ") << nr << endl;
+        }
+        if (nr.houseRc == houseRc && nr.deviceRc == deviceRc) {
+            set_house(nr.house);
+            send(nr.device, onoff);
+            if (IS_LOG_PRIO(LOG_INFO)) {
+                trace << PSTR("Nexa sent: ") << nr << endl;
             }
         }
     }
