@@ -19,17 +19,19 @@ public:
             uint8_t onoff;
             uint8_t hour;
             uint8_t minute;
+            uint8_t daymask;
         };
 
         nexadevice_t() {
         };
 
-        nexadevice_t(int32_t h, uint8_t d, uint8_t f, uint8_t ho, uint8_t mi) {
+        nexadevice_t(int32_t h, uint8_t d, uint8_t f, uint8_t ho, uint8_t mi, uint8_t dm) {
             house = h;
             device = d;
             onoff = f;
             hour = ho;
             minute = mi;
+            daymask = dm;
         }
 
         friend IOStream& operator<<(IOStream& outs, nexadevice_t code);
@@ -81,7 +83,7 @@ public:
     }
 
     void add(nexadevice_t* nd);
-    void add(int32_t house, uint8_t device, uint8_t onoff, uint8_t hour, uint8_t minute);
+    void add(int32_t house, uint8_t device, uint8_t onoff, uint8_t hour, uint8_t minute, uint8_t daymask = 0x7f);
     void addRc(int32_t houseRc, uint8_t deviceRc, int32_t house, uint8_t device);
     void sendRc(uint32_t houseRc, uint8_t deviceRc, uint8_t onoff);
 };

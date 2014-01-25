@@ -5,7 +5,8 @@ IOStream& operator<<(IOStream& outs, NexaController::nexadevice_t nd) {
     outs << PSTR("house = ") << nd.house
             << PSTR(", device = ") << nd.device
             << PSTR(", on/off = ") << nd.onoff
-            << PSTR(", at ") << nd.hour
+            << PSTR(", at ") << nd.daymask
+            << PSTR(" ") << nd.hour
             << PSTR(":") << nd.minute;
     return (outs);
 }
@@ -22,11 +23,12 @@ void NexaController::add(nexadevice_t* nd) {
     add(nd->house, nd->device, nd->onoff, nd->hour, nd->minute);
 }
 
-void NexaController::add(int32_t house, uint8_t device, uint8_t onoff, uint8_t hour, uint8_t minute) {
+void NexaController::add(int32_t house, uint8_t device, uint8_t onoff, uint8_t hour, uint8_t minute, uint8_t daymask) {
     if (numDevices < MAX_DEVICES) {
         nexaDevices[numDevices].house = house;
         nexaDevices[numDevices].device = device;
         nexaDevices[numDevices].onoff = onoff;
+        nexaDevices[numDevices].daymask = daymask;
         nexaDevices[numDevices].hour = hour;
         nexaDevices[numDevices].minute = minute;
         if (IS_LOG_PRIO(LOG_DEBUG)) {
@@ -60,10 +62,13 @@ void NexaController::on_event(uint8_t type, uint16_t value) {
 
     for (uint8_t i = 0; i < numDevices; i++) {
         nexadevice_t nd = nexaDevices[i];
+        uint8_t dm = (nd.daymask >> (now.day - 1)) & 0x1;
         if (IS_LOG_PRIO(LOG_DEBUG)) {
             trace << PSTR("nexa device: ") << i << PSTR(": ") << nd << endl;
+            trace << PSTR("daymask calc: ") << dm << PSTR(" daymask:") << nd.daymask << PSTR(" day:") << now.day << endl;
         }
-        if (now.hours == nd.hour && now.minutes == nd.minute) {
+
+        if (now.hours == nd.hour && now.minutes == nd.minute && dm == 0x1) {
             set_house(nd.house);
             _nexaReceiver->disable();
             send(nd.device, nd.onoff);
