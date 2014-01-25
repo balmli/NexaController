@@ -9,11 +9,13 @@
 #include <Cosa/IOBuffer.hh>
 #include <Cosa/IOStream/Driver/UART.hh>
 #include <Cosa/Driver/NEXA.hh>
+#include <Cosa/EEPROM.hh>
 
+EEPROM eeprom;
 RtcClock ds3231;
 ClockInterrupt clockInt(Board::EXT1);
 NexaReceiver receiver(Board::EXT0);
-NexaController nexaCtrlr(Board::D12, &ds3231, &receiver);
+NexaController nexaCtrlr(Board::D12, &ds3231, &receiver, &eeprom);
 
 void setup() {
     uart.begin(9600);
@@ -30,7 +32,6 @@ void setup() {
     clockInt.attach(&nexaCtrlr);
     clockInt.enable();
 
-    //receiver.attach(&nexaCtrlr);
     receiver.enable();
 }
 
@@ -48,6 +49,11 @@ void loop() {
 }
 
 void initNexa() {
+    //configure();
+    nexaCtrlr.readFromEeprom();
+}
+
+void configure() {
     // Stue ovn 1: 32211232.0
     nexaCtrlr.add(32211232, 0, 1, 14, 0, 127); // man - søn
     nexaCtrlr.add(32211232, 0, 0, 22, 0, 127); // man - søn
@@ -91,4 +97,5 @@ void initNexa() {
     // Remote for kontoret
     nexaCtrlr.addRc(12134882, 2, 32211234, 0);
 
+    nexaCtrlr.writeToEeprom();
 }

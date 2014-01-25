@@ -19,6 +19,58 @@ IOStream& operator<<(IOStream& outs, NexaController::nexaremote_t nd) {
     return (outs);
 }
 
+void NexaController::writeToEeprom() {
+    uint8_t* pntr = 0;
+    nexaconfig_t cfg(numDevices, numRemotes);
+    int ret = _eeprom->write(pntr, &cfg, sizeof (cfg));
+    _eeprom->write_await();
+    pntr += ret;
+
+    for (uint8_t i = 0; i < numDevices; i++) {
+        nexadevice_t nd = nexaDevices[i];
+        ret = _eeprom->write(pntr, &nd, sizeof (nd));
+        _eeprom->write_await();
+        pntr += ret;
+    }
+    for (uint8_t i = 0; i < numRemotes; i++) {
+        nexaremote_t nr = nexaRemotes[i];
+        ret = _eeprom->write(pntr, &nr, sizeof (nr));
+        _eeprom->write_await();
+        pntr += ret;
+    }
+
+    if (IS_LOG_PRIO(LOG_INFO)) {
+        trace << PSTR("Written config to EEPROM: ") << numDevices << PSTR(" devices. ") << numRemotes << PSTR(" remotes. ") << endl;
+    }
+}
+
+void NexaController::readFromEeprom() {
+    uint8_t* pntr = 0;
+    nexaconfig_t cfg;
+    int ret = _eeprom->read(&cfg, pntr, sizeof (cfg));
+    pntr += ret;
+
+    numDevices = 0;
+    numRemotes = 0;
+
+    nexadevice_t nd;
+    for (uint8_t i = 0; i < cfg.numDevices; i++) {
+        ret = _eeprom->read(&nd, pntr, sizeof (nd));
+        pntr += ret;
+        add(&nd);
+    }
+    nexaremote_t nr;
+    for (uint8_t i = 0; i < cfg.numRemotes; i++) {
+        ret = _eeprom->read(&nr, pntr, sizeof (nr));
+        pntr += ret;
+        addRc(&nr);
+    }
+
+    if (IS_LOG_PRIO(LOG_INFO)) {
+        trace << PSTR("Read config from EEPROM: ") << numDevices << PSTR(" devices. ") << numRemotes << PSTR(" remotes. ") << endl;
+    }
+}
+
 void NexaController::add(nexadevice_t* nd) {
     add(nd->house, nd->device, nd->onoff, nd->hour, nd->minute);
 }
@@ -38,6 +90,10 @@ void NexaController::add(int32_t house, uint8_t device, uint8_t onoff, uint8_t h
     } else {
         TRACE("Max number of Nexa devices reached");
     }
+}
+
+void NexaController::addRc(nexaremote_t* nr) {
+    addRc(nr->houseRc, nr->deviceRc, nr->house, nr->device);
 }
 
 void NexaController::addRc(int32_t houseRc, uint8_t deviceRc, int32_t house, uint8_t device) {
