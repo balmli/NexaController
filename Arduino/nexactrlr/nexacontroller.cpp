@@ -21,34 +21,40 @@ IOStream& operator<<(IOStream& outs, NexaController::nexaremote_t nd) {
 
 void NexaController::writeToEeprom() {
     uint8_t* pntr = 0;
+    unsigned int numBytes = 0;
     nexaconfig_t cfg(numDevices, numRemotes);
     int ret = _eeprom->write(pntr, &cfg, sizeof (cfg));
     _eeprom->write_await();
     pntr += ret;
+    numBytes += ret;
 
     for (uint8_t i = 0; i < numDevices; i++) {
         nexadevice_t nd = nexaDevices[i];
         ret = _eeprom->write(pntr, &nd, sizeof (nd));
         _eeprom->write_await();
         pntr += ret;
+        numBytes += ret;
     }
     for (uint8_t i = 0; i < numRemotes; i++) {
         nexaremote_t nr = nexaRemotes[i];
         ret = _eeprom->write(pntr, &nr, sizeof (nr));
         _eeprom->write_await();
         pntr += ret;
+        numBytes += ret;
     }
 
     if (IS_LOG_PRIO(LOG_INFO)) {
-        trace << PSTR("Written config to EEPROM: ") << numDevices << PSTR(" devices. ") << numRemotes << PSTR(" remotes. ") << endl;
+        trace << PSTR("Written config to EEPROM: ") << numDevices << PSTR(" devices. ") << numRemotes << PSTR(" remotes. ") << numBytes << PSTR(" bytes.") << endl;
     }
 }
 
 void NexaController::readFromEeprom() {
     uint8_t* pntr = 0;
+    unsigned int numBytes = 0;
     nexaconfig_t cfg;
     int ret = _eeprom->read(&cfg, pntr, sizeof (cfg));
     pntr += ret;
+    numBytes += ret;
 
     numDevices = 0;
     numRemotes = 0;
@@ -57,17 +63,19 @@ void NexaController::readFromEeprom() {
     for (uint8_t i = 0; i < cfg.numDevices; i++) {
         ret = _eeprom->read(&nd, pntr, sizeof (nd));
         pntr += ret;
+        numBytes += ret;
         add(&nd);
     }
     nexaremote_t nr;
     for (uint8_t i = 0; i < cfg.numRemotes; i++) {
         ret = _eeprom->read(&nr, pntr, sizeof (nr));
         pntr += ret;
+        numBytes += ret;
         addRc(&nr);
     }
 
     if (IS_LOG_PRIO(LOG_INFO)) {
-        trace << PSTR("Read config from EEPROM: ") << numDevices << PSTR(" devices. ") << numRemotes << PSTR(" remotes. ") << endl;
+        trace << PSTR("Read config from EEPROM: ") << numDevices << PSTR(" devices. ") << numRemotes << PSTR(" remotes. ") << numBytes << PSTR(" bytes.") << endl;
     }
 }
 
