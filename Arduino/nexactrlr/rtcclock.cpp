@@ -1,5 +1,8 @@
 #include "rtcclock.h"
-#include <Cosa/Trace.hh>
+
+#include "Cosa/Trace.hh"
+#include "Cosa/TWI/Driver/DS3231.hh"
+#include "Cosa/TWI/Driver/DS3231.cpp"
 
 void RtcClock::begin() {
     //setTime();
@@ -105,5 +108,20 @@ void RtcClock::clearInterruptFlags() {
 
 void RtcClock::on_event(uint8_t type, uint16_t value) {
     on_clock_interrupt();
+}
+
+void RtcClock::setRtc(clock_t clock) {
+    if (clock == 0L) return;
+    time_t now;
+    get_time(now);
+#ifndef NDEBUG
+    trace << PSTR("setRtc before: ") << now.day << ' ' << now << endl;
+#endif
+    time_t newTime(clock);
+    set_time(newTime);
+    get_time(now);
+#ifndef NDEBUG
+    trace << PSTR("setRtc: ") << now.day << ' ' << now << endl;
+#endif
 }
 

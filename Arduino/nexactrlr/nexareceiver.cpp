@@ -1,7 +1,6 @@
+#include "nexareceiver.h"
 
-#include "Nexareceiver.h"
-#include <Cosa/Event.hh>
-#include <Cosa/Driver/NEXA.hh>
+#include "Cosa/Event.hh"
 
 Queue<NEXA::code_t, NexaReceiver::QUEUE_MAX> NexaReceiver::queue;
 

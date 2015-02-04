@@ -1,8 +1,9 @@
 #ifndef __NEXA_RECEIVER_H__
 #define __NEXA_RECEIVER_H__
 
+#include "config.h"
+
 #include "Cosa/Driver/NEXA.hh"
-#include "Cosa/Trace.hh"
 
 class NexaReceiver :
 public NEXA::Receiver {

@@ -1,18 +1,15 @@
-#ifndef __NEXA_CONTROLLER_H__
-#define __NEXA_CONTROLLER_H__
+#ifndef __NEXA_CONFIG_STORE_H__
+#define __NEXA_CONFIG_STORE_H__
 
-#include "rtcclock.h"
-#include "nexareceiver.h"
+#include "config.h"
 
-#include <Cosa/Linkage.hh>
-#include <Cosa/Driver/NEXA.hh>
-#include <Cosa/EEPROM.hh>
+#include "Cosa/Trace.hh"
+#include "Cosa/EEPROM.hh"
 
-class NexaController :
-public NEXA::Transmitter, public Link {
+class NexaConfigStore
+{
 public:
-
-    union nexaconfig_t {
+        union nexaconfig_t {
 
         struct {
             uint8_t numDevices;
@@ -79,27 +76,30 @@ public:
 private:
     static const uint8_t MAX_DEVICES = 20;
     static const uint8_t MAX_REMOTES = 20;
-    EEPROM* _eeprom;
-    RtcClock* _rtcClock;
-    NexaReceiver* _nexaReceiver;
     uint8_t numDevices;
     uint8_t numRemotes;
     nexadevice_t nexaDevices[MAX_DEVICES];
     nexaremote_t nexaRemotes[MAX_REMOTES];
 
+    EEPROM* _eeprom;
+
 protected:
-    virtual void on_event(uint8_t type, uint16_t value);
 
 public:
 
-    NexaController(Board::DigitalPin nexaTransmitterPin, RtcClock* rtc, NexaReceiver* nr, EEPROM* ep) :
-    Link(),
-    NEXA::Transmitter(nexaTransmitterPin),
-    numDevices(0) {
-        _rtcClock = rtc;
-        _nexaReceiver = nr;
+    NexaConfigStore(EEPROM* ep) :
+    numDevices(0),
+    numRemotes(0)
+    {
         _eeprom = ep;
     }
+
+    uint8_t getNumDevices() { return numDevices; }
+    uint8_t getNumRemotes() { return numRemotes; }
+    void clearDevices() { numDevices = 0; }
+    void clearRemotes() { numRemotes = 0; }
+    nexadevice_t getDevice(uint8_t id) { return nexaDevices[id]; }
+    nexaremote_t getRemote(uint8_t id) { return nexaRemotes[id]; }
 
     void writeToEeprom();
     void readFromEeprom();
@@ -108,9 +108,8 @@ public:
     void add(int32_t house, uint8_t device, uint8_t onoff, uint8_t hour, uint8_t minute, uint8_t daymask = 0x7f);
     void addRc(nexaremote_t* nr);
     void addRc(int32_t houseRc, uint8_t deviceRc, int32_t house, uint8_t device);
-    void sendRc(uint32_t houseRc, uint8_t deviceRc, uint8_t onoff);
+
 };
 
 #endif
-
 

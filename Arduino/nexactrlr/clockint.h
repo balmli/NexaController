@@ -1,8 +1,10 @@
 #ifndef __CLOCKINT_HH__
 #define __CLOCKINT_HH__
 
-#include <Cosa/ExternalInterrupt.hh>
-#include <Cosa/Linkage.hh>
+#include "config.h"
+
+#include "Cosa/ExternalInterrupt.hh"
+#include "Cosa/Linkage.hh"
 
 class ClockInterrupt :
 public ExternalInterrupt, public Head {

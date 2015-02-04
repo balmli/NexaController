@@ -1,101 +1,93 @@
+
+#include "Cosa/EEPROM.hh"
+#include "Cosa/Event.hh"
+#include "Cosa/ExternalInterrupt.hh"
+#include "Cosa/Linkage.hh"
+#include "Cosa/Trace.hh"
+#include "Cosa/IOBuffer.hh"
+#include "Cosa/IOStream/Driver/UART.hh"
+#include "Cosa/IOStream/Driver/UART.cpp"
+#include "Cosa/Pins.hh"
+#include "Cosa/RTC.hh"
+#include "Cosa/Watchdog.hh"
+
+#include "Cosa/Driver/NEXA.hh"
+#include "Cosa/Driver/NEXA.cpp"
+
+#include "Cosa/INET/DHCP.hh"
+#include "Cosa/INET/DHCP.cpp"
+#include "Cosa/INET/DNS.hh"
+#include "Cosa/INET/DNS.cpp"
+#include "Cosa/INET/NTP.hh"
+#include "Cosa/INET/NTP.cpp"
+#include "Cosa/Socket/Driver/W5100.hh"
+#include "Cosa/Socket/Driver/W5100.cpp"
+
+#include "config.h"
 #include "rtcclock.h"
 #include "clockint.h"
-#include "nexacontroller.h"
+#include "nexatransmitter.h"
 #include "nexareceiver.h"
+#include "rgbled.h"
+#include "ethernet.h"
+#include "initializer.h"
+#include "commandparser.h"
+#include "nexalogger.h"
+#include "nexaconfigstore.h"
+#include "serialcommandreader.h"
+#include "commandhandler.h"
 
-#include <Cosa/RTC.hh>
-#include <Cosa/Watchdog.hh>
-#include <Cosa/Trace.hh>
-#include <Cosa/IOBuffer.hh>
-#include <Cosa/IOStream/Driver/UART.hh>
-#include <Cosa/Driver/NEXA.hh>
-#include <Cosa/EEPROM.hh>
-
+RgbLed rgbLed(Board::PWM1, Board::PWM2, Board::PWM3);
+EthernetClient ethernet;
 EEPROM eeprom;
 RtcClock ds3231;
 ClockInterrupt clockInt(Board::EXT1);
+NexaConfigStore nexaConfigStore(&eeprom);
 NexaReceiver receiver(Board::EXT0);
-NexaController nexaCtrlr(Board::D12, &ds3231, &receiver, &eeprom);
+NexaTransmitter nexaTransmitter(Board::D7, &ds3231, &nexaConfigStore, &receiver, &rgbLed);
+NexaLogger nexaLogger;
+CommandHandler commandHandler(&ds3231);
+CommandParser commandParser(&commandHandler, &nexaConfigStore);
+SerialCommandReader serialCommandReader(&commandParser);
 
 void setup() {
+    rgbLed.red();
     uart.begin(9600);
-    trace.begin(&uart, PSTR("NexaController started"));
+    trace.begin(&uart, PSTR("ArdNexa started"));
     trace_log_mask = LOG_UPTO(LOG_INFO);
     //trace_log_mask = LOG_UPTO(LOG_DEBUG);
 
     Watchdog::begin(16, SLEEP_MODE_IDLE, Watchdog::push_timeout_events);
     RTC::begin();
 
-    initNexa();
+    Initializer initializer(&nexaConfigStore);
+    initializer.init();
     ds3231.begin();
     clockInt.attach(&ds3231);
-    clockInt.attach(&nexaCtrlr);
+    clockInt.attach(&nexaTransmitter);
     clockInt.enable();
 
     receiver.enable();
+    ds3231.setRtc(ethernet.getTime());
+    rgbLed.off();
 }
 
 void loop() {
     Event event;
-    Event::queue.await(&event);
-    event.dispatch();
+    if (Event::queue.dequeue(&event)) {
+        event.dispatch();
+    }
+    else {
+        serialCommandReader.checkSerialCommand();
+        Power::sleep(SLEEP_MODE_IDLE);
+    } 
 
     if (event.get_type() == NexaReceiver::REMOTE_CONTROL && NexaReceiver::queue.available() > 0) {
         NEXA::code_t cmd(0);
         NexaReceiver::queue.dequeue(&cmd);
         trace << PSTR("cmd: ") << cmd << endl;
-        nexaCtrlr.sendRc(cmd.house, cmd.device, cmd.onoff);
+        nexaTransmitter.sendRc(cmd.house, cmd.device, cmd.onoff);
     }
+
 }
 
-void initNexa() {
-    //configure();
-    nexaCtrlr.readFromEeprom();
-}
-
-void configure() {
-    // Stue ovn 1: 32211232.0
-    nexaCtrlr.add(32211232, 0, 1, 14, 0, 127); // man - søn
-    nexaCtrlr.add(32211232, 0, 0, 22, 0, 127); // man - søn
-
-    // Stue ovn 2: 32211232.1
-    nexaCtrlr.add(32211232, 1, 1, 14, 0);
-    nexaCtrlr.add(32211232, 1, 0, 22, 0);
-
-    // Kjøkken ovn 32211244.0
-    nexaCtrlr.add(32211244, 0, 1, 6, 0, 31); // man - fre
-    nexaCtrlr.add(32211244, 0, 0, 8, 0, 31); // man - fre
-    nexaCtrlr.add(32211244, 0, 1, 14, 0, 31); // man - fre
-    nexaCtrlr.add(32211244, 0, 1, 7, 0, 96); // lør - søn
-    nexaCtrlr.add(32211244, 0, 0, 22, 0);
-
-    // Loftstua: 32211240.0
-    nexaCtrlr.add(32211240, 0, 1, 6, 0);
-    nexaCtrlr.add(32211240, 0, 0, 8, 0);
-    nexaCtrlr.add(32211240, 0, 1, 14, 0);
-    nexaCtrlr.add(32211240, 0, 0, 22, 0);
-
-    // Soverom 1: 32211236.0
-    nexaCtrlr.add(32211236, 0, 1, 5, 30);
-    nexaCtrlr.add(32211236, 0, 0, 7, 0);
-    nexaCtrlr.add(32211236, 0, 1, 15, 0);
-    nexaCtrlr.add(32211236, 0, 0, 22, 0);
-
-    // Kontor: 32211234.0
-    nexaCtrlr.add(32211234, 0, 1, 15, 0);
-    nexaCtrlr.add(32211234, 0, 0, 22, 0);
-
-    // Remote for stua, kjøkken, loftstue
-    nexaCtrlr.addRc(12134882, 0, 32211232, 0);
-    nexaCtrlr.addRc(12134882, 0, 32211232, 1);
-    nexaCtrlr.addRc(12134882, 0, 32211244, 0);
-    nexaCtrlr.addRc(12134882, 0, 32211240, 0);
-
-    // Remote for soverom
-    nexaCtrlr.addRc(12134882, 1, 32211236, 0);
-
-    // Remote for kontoret
-    nexaCtrlr.addRc(12134882, 2, 32211234, 0);
-
-    nexaCtrlr.writeToEeprom();
-}
